@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Xiaomi Mexico — Organizational Structure</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #F3F1EC;
+  --surface:   #FDFCF9;
+  --border:    #E2DFD6;
+  --text:      #1C1B18;
+  --muted:     #68675F;
+  --subtle:    #9A9892;
+  --line:      #C6C3B6;
+  --purple-bg:#EEEDFE; --purple-bd:#534AB7; --purple-dk:#3C3489;
+  --teal-bg:  #E1F5EE; --teal-bd:  #0F6E56; --teal-dk:  #085041;
+  --blue-bg:  #E6F1FB; --blue-bd:  #185FA5; --blue-dk:  #0C447C;
+  --coral-bg: #FAECE7; --coral-bd: #993C1D; --coral-dk: #712B13;
+  --green-bg: #EAF3DE; --green-bd: #3B6D11; --green-dk: #27500A;
+  --gray-bg:  #F1EFE8; --gray-bd:  #6E6C66; --gray-dk:  #3D3C39;
+}
+
+html, body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; -webkit-font-smoothing:antialiased; }
+
+/* ── HEADER ───────────────────────────────────────────── */
+header {
+  position:sticky; top:0; z-index:200;
+  background:var(--surface); border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 40px; gap:20px; flex-wrap:wrap;
+}
+.htitle h1 { font-size:16px; font-weight:600; letter-spacing:-0.2px; }
+.htitle h1 em { font-style:normal; font-weight:400; color:var(--muted); }
+.htitle p { font-family:'DM Mono',monospace; font-size:10.5px; color:var(--subtle); letter-spacing:0.3px; margin-top:3px; }
+.hmeta { display:flex; align-items:center; gap:22px; flex-wrap:wrap; }
+.leg  { display:flex; align-items:center; gap:14px; }
+.legi { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--muted); }
+.lsw  { width:20px; height:11px; border-radius:3px; border:1.5px solid var(--subtle); }
+.lsw.dash { border-style:dashed; border-color:var(--green-bd); }
+.hhint { font-size:11px; color:var(--subtle); font-style:italic; }
+
+/* ── CHART AREA ───────────────────────────────────────── */
+.scroll-outer { overflow-x:auto; overflow-y:visible; padding:50px 0 0; cursor:grab; }
+.scroll-outer:active { cursor:grabbing; }
+#chart { position:relative; }
+
+/* SVG lines */
+#svg-lines { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; }
+
+/* ── ROOT NODE ────────────────────────────────────────── */
+.root-node {
+  position:absolute;
+  background:var(--surface); border:1.5px solid var(--border); border-radius:11px;
+  display:flex; align-items:center; justify-content:center; flex-direction:column;
+  box-shadow:0 2px 10px rgba(0,0,0,0.07);
+}
+.root-node .rn { font-size:13px; font-weight:600; letter-spacing:-0.2px; }
+.root-node .rs { font-family:'DM Mono',monospace; font-size:9.5px; color:var(--subtle); margin-top:4px; letter-spacing:0.2px; }
+
+/* ── CATEGORY NODE ────────────────────────────────────── */
+.cat-node {
+  position:absolute; border-radius:10px; border:1.5px solid;
+  overflow:hidden; cursor:pointer; user-select:none;
+  transition:transform 0.13s ease, box-shadow 0.13s ease;
+}
+.cat-node:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,0.11); }
+.cat-node.open  { box-shadow:0 4px 16px rgba(0,0,0,0.12); }
+.cat-bar  { height:4px; width:100%; }
+.cat-body { padding:8px 12px 10px; }
+.cat-name { font-size:12px; font-weight:600; letter-spacing:-0.1px; line-height:1.3; display:flex; align-items:center; gap:5px; }
+.cat-sub  { font-size:9.5px; margin-top:2px; opacity:0.75; line-height:1.3; }
+.cat-arr  { font-size:9px; transition:transform 0.26s cubic-bezier(0.34,1.2,0.64,1); display:inline-block; }
+.cat-node.open .cat-arr { transform:rotate(180deg); }
+
+/* ── CONNECTOR cat → panel ────────────────────────────── */
+.cat-conn {
+  position:absolute; width:2px; border-radius:1px;
+  transform:scaleY(0); transform-origin:top; opacity:0;
+  transition:transform 0.26s cubic-bezier(0.34,1.1,0.64,1), opacity 0.2s;
+}
+.cat-conn.open { transform:scaleY(1); opacity:1; }
+
+/* ── DEPT PANEL ───────────────────────────────────────── */
+.panel-wrap {
+  position:absolute;
+  background:var(--surface); border-radius:12px; border:1.5px solid var(--border);
+  box-shadow:0 10px 36px rgba(0,0,0,0.11), 0 2px 6px rgba(0,0,0,0.05);
+  overflow:hidden; pointer-events:none; opacity:0;
+  transition:opacity 0.22s ease;
+}
+.panel-wrap.open { pointer-events:auto; opacity:1; }
+
+/* arrow pointer */
+.panel-wrap::before {
+  content:'';
+  position:absolute; top:-8px;
+  width:14px; height:8px;
+  clip-path:polygon(50% 0%,0% 100%,100% 100%);
+  background:var(--surface);
+  left:var(--tri);
+  transform:translateX(-50%);
+  z-index:1;
+  filter:drop-shadow(0 -2px 2px rgba(0,0,0,0.06));
+}
+
+/* smooth height via grid trick */
+.panel-clip {
+  display:grid; grid-template-rows:0fr;
+  transition:grid-template-rows 0.28s cubic-bezier(0.34,1.1,0.64,1);
+}
+.panel-wrap.open .panel-clip { grid-template-rows:1fr; }
+.panel-inner { overflow:hidden; min-height:0; }
+
+/* dept card grid */
+.panel-grid { display:grid; gap:10px; padding:14px; }
+
+/* ── DEPT CARD ────────────────────────────────────────── */
+.dept-card {
+  border-radius:9px; border:1.5px solid; overflow:hidden; cursor:pointer;
+  transition:transform 0.12s ease, box-shadow 0.12s ease;
+}
+.dept-card:hover { transform:translateY(-2px); box-shadow:0 6px 18px rgba(0,0,0,0.13); z-index:5; }
+.dept-card.inferred { border-style:dashed; }
+.dc-inner  { padding:9px 11px 10px; }
+.dc-cn     { font-size:12px; font-weight:600; letter-spacing:-0.1px; line-height:1.3; }
+.dc-en     { font-size:10px; margin-top:3px; opacity:0.8; line-height:1.3; }
+.dc-inf    { font-family:'DM Mono',monospace; font-size:9px; margin-top:4px; opacity:0.55; }
+
+/* ── TOOLTIP ──────────────────────────────────────────── */
+.tooltip {
+  position:fixed; z-index:500; width:296px;
+  background:var(--surface); border-radius:12px; border:1.5px solid var(--border);
+  box-shadow:0 14px 44px rgba(0,0,0,0.14); pointer-events:none; overflow:hidden;
+  opacity:0; transform:translateY(6px);
+  transition:opacity 0.15s ease, transform 0.15s ease;
+}
+.tooltip.vis { opacity:1; transform:translateY(0); }
+.tip-head  { padding:12px 15px 11px; border-bottom:1px solid var(--border); }
+.tip-cn    { font-size:13px; font-weight:600; letter-spacing:-0.1px; }
+.tip-en    { font-size:10.5px; margin-top:2px; opacity:0.7; }
+.tip-body  { padding:8px 0 4px; }
+.tip-row   { display:flex; align-items:flex-start; gap:9px; padding:5px 15px; }
+.tip-row:hover { background:rgba(0,0,0,0.02); }
+.tip-bull  { font-size:13px; font-weight:700; flex-shrink:0; margin-top:-1px; line-height:1.55; }
+.tip-text  { font-size:11px; line-height:1.6; color:var(--text); }
+
+/* ── FOOTER HINT ──────────────────────────────────────── */
+.foot { text-align:center; font-size:11px; color:var(--subtle); font-style:italic; padding:18px 0 28px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="htitle">
+    <h1>Xiaomi Mexico <em>— Organizational Structure</em></h1>
+    <p>小米科技 · 国际业务部 · 拉美地区部 · 墨西哥</p>
+  </div>
+  <div class="hmeta">
+    <div class="leg">
+      <div class="legi"><div class="lsw"></div>Confirmed in 人员架构</div>
+      <div class="legi"><div class="lsw dash"></div>Inferred</div>
+    </div>
+    <div class="hhint">Click a branch · Hover a card for responsibilities</div>
+  </div>
+</header>
+
+<div class="scroll-outer" id="scrollOuter">
+  <div id="chart"></div>
+</div>
+<p class="foot">Click any branch node to expand its departments</p>
+
+<div id="tooltip" class="tooltip">
+  <div id="tip-head" class="tip-head"></div>
+  <div id="tip-body" class="tip-body"></div>
+</div>
+
+<script>
+/* ── DATA ─────────────────────────────────────────────── */
+const CO = {
+  purple:{ bg:'#EEEDFE', bd:'#534AB7', t:'#3C3489' },
+  teal:  { bg:'#E1F5EE', bd:'#0F6E56', t:'#085041' },
+  blue:  { bg:'#E6F1FB', bd:'#185FA5', t:'#0C447C' },
+  coral: { bg:'#FAECE7', bd:'#993C1D', t:'#712B13' },
+  green: { bg:'#EAF3DE', bd:'#3B6D11', t:'#27500A' },
+  gray:  { bg:'#F1EFE8', bd:'#6E6C66', t:'#3D3C39' },
+};
+
+const DEPTS = {
+  aiot:   {cn:'AIoT GTM部',    en:'AIoT GTM',          n:7,    c:'purple', resp:['GTM planning for AIoT & tablet product lines','Pricing strategy & channel mix for AIoT','Launch coordination with HQ AIoT product teams','Sell-through monitoring & promotional planning','Market intelligence for AIoT segment in Mexico']},
+  mobile: {cn:'手机GTM部',     en:'Mobile GTM',        n:5,    c:'purple', resp:['GTM planning for all smartphone lines','Pricing & margin management per SKU','Commercial calendar & promotional alignment','Channel sell-in coordination across channels','Sell-through monitoring per model']},
+  open:   {cn:'公开市场销售部', en:'Open Market Sales', n:13,   c:'teal',   resp:['Key accounts: Liverpool, Walmart, Coppel, Elektra','Sell-in negotiation & shelf space allocation','Regional distributor network management','In-store promo execution & display placement','Retail sell-through & POS reporting to HQ']},
+  channel:{cn:'渠道零售部',    en:'Channel Retail',    n:11,   c:'teal',   resp:['3rd-party retail channel development','Channel partner onboarding & training','Retail pricing compliance monitoring','Channel conflict resolution','Indirect sales coverage outside CDMX']},
+  newret: {cn:'新零售部',      en:'New Retail',        n:19,   c:'teal',   resp:['Mi Home store operations across Mexico','Xiaomi-owned retail experience design','In-store staff management & training','Experiential retail & demo product management','Direct consumer touchpoint strategy']},
+  carrier:{cn:'运营商销售部',  en:'Carrier Sales',     n:4,    c:'teal',   resp:['Telcel, AT&T MX & Movistar relationships','Device bundling & subsidy negotiation','Carrier certification coordination','Carrier-exclusive launch deal structuring','Co-marketing with carrier retail channels']},
+  smgmt:  {cn:'销售管理',      en:'Sales Mgmt',        n:3,    c:'teal',   resp:['Sales KPI tracking & reporting to HQ','Incentive & commission scheme admin','Sales process governance & workflows','Cross-channel commercial calendar mgmt','Discount & pricing authority limits']},
+  mkt:    {cn:'市场部',        en:'Marketing',         n:7,    c:'blue',   resp:['Brand campaigns & media buying in Mexico','Product launch marketing coordination','Social media & content strategy','PR & influencer management','Co-marketing with key retail partners']},
+  ecom:   {cn:'电商部',        en:'E-commerce',        n:2,    c:'blue',   resp:['Mi.com MX storefront management','Amazon MX & MercadoLibre presence','Online pricing & promotional execution','Digital shelf content management','Online sell-through tracking']},
+  deliv:  {cn:'交付部',        en:'Delivery',          n:9,    c:'coral',  resp:['Inbound logistics & customs clearance','Warehouse management in Mexico','Last-mile delivery to retail partners','Returns & reverse logistics handling','Delivery KPI tracking & HQ reporting']},
+  ptech:  {cn:'产品技术部',    en:'Product & Tech',    n:3,    c:'coral',  resp:['IFETEL certification & regulatory compliance','HQ-to-market technical translation layer','Band compatibility for MX carriers','Software localization for LATAM Spanish','Product feasibility review for MX SKUs']},
+  fin:    {cn:'财务部',        en:'Finance',           n:null, c:'green',  inf:true, resp:['P&L management for Mexico BU','Budget allocation & cost control','Financial reporting to LatAm HQ','FX management (MXN/USD exposure)','AP/AR & vendor payment management']},
+  hr:     {cn:'人力资源部',    en:'HR / People',       n:null, c:'green',  inf:true, resp:['Recruitment & onboarding for Mexico','Payroll & benefits administration','Performance review coordination','Labor law compliance (LFT)','Headcount planning & org development']},
+  legal:  {cn:'法务部',        en:'Legal',             n:null, c:'green',  inf:true, resp:['Contract review & commercial agreements','Regulatory compliance (PROFECO, IFETEL)','IP protection in Mexico','Dispute resolution & litigation support','HQ legal coordination for MX entity']},
+  it:     {cn:'IT部',          en:'IT & Systems',      n:null, c:'green',  inf:true, resp:['Internal systems & ERP management','Network & device support for MX office','Data security & access control','HQ IT infrastructure coordination','Software vendor management']},
+  admin:  {cn:'行政',          en:'Admin',             n:0,    c:'green',  resp:['Office facilities management','Travel & expense administration','Vendor & supplier coordination','Government liaison & permits','Executive support & scheduling']},
+  after:  {cn:'售后服务',      en:'After-sales',       n:0,    c:'gray',   resp:['Warranty claims processing','Authorized service center network','Spare parts management','Customer complaint resolution','Product quality feedback to HQ']},
+  ff:     {cn:'FF',            en:'FF Dept',           n:0,    c:'gray',   resp:['Function unclear — 0 active headcount','Possibly centralized at LatAm level','May relate to field force or fixtures','Confirm scope with internal contacts','Could be a future planned function']},
+};
+
+const CATS = [
+  {key:'gtm',  label:'GTM',                sub:'2 depts · 12 people',       c:'purple', depts:['aiot','mobile']},
+  {key:'sales',label:'Sales & Channel',    sub:'5 depts · 50 people',       c:'teal',   depts:['open','channel','newret','carrier','smgmt']},
+  {key:'mkt',  label:'Marketing & Digital',sub:'2 depts · 9 people',        c:'blue',   depts:['mkt','ecom']},
+  {key:'ops',  label:'Operations',         sub:'2 depts · 12 people',       c:'coral',  depts:['deliv','ptech']},
+  {key:'plat', label:'Platform / Enabling',sub:'5 depts · mostly inferred', c:'green',  depts:['fin','hr','legal','it','admin']},
+  {key:'cs',   label:'Customer Support',   sub:'2 depts · 0 active',        c:'gray',   depts:['after','ff']},
+];
+
+/* ── LAYOUT ───────────────────────────────────────────── */
+const NW=172, NH=74, GAP=28, PAD=80, VG=80;
+const RW=300, RH=56;
+const TW = 6*NW + 5*GAP + 2*PAD;  // total width = 1472
+const RCX = TW / 2;               // root center x = 736
+const RY  = PAD;                   // root top = 80
+const CY  = RY + RH + VG;         // cat top = 216
+const CB  = CY + NH;               // cat bottom = 290
+const CH  = 24;                    // connector height
+const PY  = CB + CH;               // panel top = 314
+const CHART_H = PY + 290;         // canvas height = 604
+
+// Category X positions
+const catX  = i => PAD + i*(NW+GAP);
+const catCX = i => catX(i) + NW/2;
+
+// Panel layout: dep card dims
+const DW=134, DG=10, DP=14;
+function panelCols(cat) { return cat.depts.length <= 2 ? 2 : 3; }
+function panelW(cat)    { const c=panelCols(cat); return c*DW+(c-1)*DG+2*DP; }
+function panelLeft(cat, i) {
+  const cx=catCX(i), pw=panelW(cat);
+  return Math.max(PAD, Math.min(cx-pw/2, TW-PAD-pw));
+}
+
+/* ── BUILD ────────────────────────────────────────────── */
+const chart = document.getElementById('chart');
+chart.style.cssText = `width:${TW}px;height:${CHART_H}px;position:relative;`;
+
+// SVG for root→cat lines (permanent)
+const NS='http://www.w3.org/2000/svg';
+const svg=document.createElementNS(NS,'svg');
+svg.id='svg-lines';
+svg.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;';
+chart.appendChild(svg);
+
+function seg(x1,y1,x2,y2,color='#C2BEB0',w=1.5,dash=''){
+  const l=document.createElementNS(NS,'line');
+  l.setAttribute('x1',x1);l.setAttribute('y1',y1);
+  l.setAttribute('x2',x2);l.setAttribute('y2',y2);
+  l.setAttribute('stroke',color);l.setAttribute('stroke-width',w);
+  l.setAttribute('stroke-linecap','round');
+  if(dash) l.setAttribute('stroke-dasharray',dash);
+  svg.appendChild(l);
+}
+
+// Horizontal + verticals for root → cats
+const midY = RY + RH + VG/2;  // midpoint between root-bottom and cat-top
+seg(RCX, RY+RH, RCX, midY);
+seg(catCX(0), midY, catCX(5), midY);
+CATS.forEach((_,i) => seg(catCX(i), midY, catCX(i), CY));
+
+// Root node
+const rootEl=document.createElement('div');
+rootEl.className='root-node';
+rootEl.style.cssText=`left:${RCX-RW/2}px;top:${RY}px;width:${RW}px;height:${RH}px;`;
+rootEl.innerHTML=`<div class="rn">Country Manager of Mexico</div><div class="rs">小米科技 · 国际业务部</div>`;
+chart.appendChild(rootEl);
+
+// Open state
+const state = {};
+CATS.forEach(c=>state[c.key]=false);
+
+// Build each category
+CATS.forEach((cat,i) => {
+  const c=CO[cat.c];
+  const cx=catCX(i);
+  const pl=panelLeft(cat,i);
+  const pw=panelW(cat);
+  const cols=panelCols(cat);
+  const triX=cx-pl;   // px from panel-left to triangle center
+
+  /* ── category node ── */
+  const catEl=document.createElement('div');
+  catEl.className='cat-node';
+  catEl.id=`cat-${cat.key}`;
+  catEl.style.cssText=`left:${catX(i)}px;top:${CY}px;width:${NW}px;height:${NH}px;background:${c.bg};border-color:${c.bd};`;
+  catEl.innerHTML=`
+    <div class="cat-bar" style="background:${c.bd};"></div>
+    <div class="cat-body">
+      <div class="cat-name" style="color:${c.bd};">${cat.label}<span class="cat-arr">▾</span></div>
+      <div class="cat-sub"  style="color:${c.bd};">${cat.sub}</div>
+    </div>`;
+  chart.appendChild(catEl);
+
+  /* ── vertical connector ── */
+  const connEl=document.createElement('div');
+  connEl.className='cat-conn';
+  connEl.id=`conn-${cat.key}`;
+  connEl.style.cssText=`left:${cx-1}px;top:${CB}px;height:${CH}px;background:${c.bd};`;
+  chart.appendChild(connEl);
+
+  /* ── dept panel ── */
+  const deptCards=cat.depts.map(dk=>{
+    const d=DEPTS[dk], dc=CO[d.c];
+    const sub=d.n!==null?`${d.en} · ${d.n}`:d.en;
+    const inf=d.inf?`<div class="dc-inf" style="color:${dc.bd};">inferred</div>`:'';
+    return `<div class="dept-card${d.inf?' inferred':''}" data-key="${dk}"
+      style="background:${dc.bg};border-color:${dc.bd};">
+      <div class="dc-inner">
+        <div class="dc-cn" style="color:${dc.bd};">${d.cn}</div>
+        <div class="dc-en" style="color:${dc.bd};">${sub}</div>
+        ${inf}
+      </div></div>`;
+  }).join('');
+
+  const panelEl=document.createElement('div');
+  panelEl.className='panel-wrap';
+  panelEl.id=`panel-${cat.key}`;
+  panelEl.style.cssText=`left:${pl}px;top:${PY}px;width:${pw}px;border-color:${c.bd}30;`;
+  panelEl.style.setProperty('--tri',`${triX}px`);
+  panelEl.innerHTML=`
+    <div class="panel-clip">
+      <div class="panel-inner">
+        <div class="panel-grid" style="grid-template-columns:repeat(${cols},${DW}px);gap:${DG}px;padding:${DP}px;">
+          ${deptCards}
+        </div>
+      </div>
+    </div>`;
+  chart.appendChild(panelEl);
+
+  /* ── click: toggle this panel, close others ── */
+  catEl.addEventListener('click', ()=>{
+    const wasOpen=state[cat.key];
+    CATS.forEach(c2=>{
+      state[c2.key]=false;
+      document.getElementById(`cat-${c2.key}`).classList.remove('open');
+      document.getElementById(`panel-${c2.key}`).classList.remove('open');
+      document.getElementById(`conn-${c2.key}`).classList.remove('open');
+    });
+    if(!wasOpen){
+      state[cat.key]=true;
+      catEl.classList.add('open');
+      panelEl.classList.add('open');
+      connEl.classList.add('open');
+    }
+  });
+});
+
+/* ── DEPT CARD HOVER → TOOLTIP ────────────────────────── */
+const tipEl  = document.getElementById('tooltip');
+const tipHead= document.getElementById('tip-head');
+const tipBody= document.getElementById('tip-body');
+
+document.getElementById('chart').addEventListener('mouseover', e=>{
+  const card=e.target.closest('.dept-card');
+  if(!card) return;
+  const d=DEPTS[card.dataset.key], c=CO[d.c];
+  const sub=d.n!==null?`${d.en} · ${d.n} people`:d.en;
+  tipHead.style.cssText=`background:${c.bg};border-bottom-color:${c.bd}25;`;
+  tipHead.innerHTML=`<div class="tip-cn" style="color:${c.bd};">${d.cn}</div><div class="tip-en" style="color:${c.bd};">${sub}</div>`;
+  tipEl.style.borderColor=c.bd+'40';
+  tipBody.innerHTML=d.resp.map(r=>`
+    <div class="tip-row">
+      <span class="tip-bull" style="color:${c.bd};">›</span>
+      <span class="tip-text">${r}</span>
+    </div>`).join('');
+  tipEl.classList.add('vis');
+});
+
+document.getElementById('chart').addEventListener('mouseout', e=>{
+  if(!e.target.closest('.dept-card')) return;
+  if(e.relatedTarget?.closest?.('.dept-card')) return;
+  tipEl.classList.remove('vis');
+});
+
+document.addEventListener('mousemove', e=>{
+  if(!tipEl.classList.contains('vis')) return;
+  const tw=tipEl.offsetWidth, th=tipEl.offsetHeight, g=16;
+  let l=e.clientX+g, t=e.clientY-th/2;
+  if(l+tw>window.innerWidth-8) l=e.clientX-tw-g;
+  if(t<8) t=8;
+  if(t+th>window.innerHeight-8) t=window.innerHeight-th-8;
+  tipEl.style.left=l+'px'; tipEl.style.top=t+'px';
+});
+
+/* ── DRAG TO SCROLL ───────────────────────────────────── */
+const outer=document.getElementById('scrollOuter');
+let drag=false,sx=0,sl=0;
+outer.addEventListener('mousedown',e=>{drag=true;sx=e.pageX-outer.offsetLeft;sl=outer.scrollLeft;});
+window.addEventListener('mouseup',  ()=>drag=false);
+window.addEventListener('mousemove',e=>{
+  if(!drag) return;
+  e.preventDefault();
+  outer.scrollLeft=sl-(e.pageX-outer.offsetLeft-sx);
+});
+</script>
+</body>
+</html>
